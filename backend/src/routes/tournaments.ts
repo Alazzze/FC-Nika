@@ -33,12 +33,13 @@ router.get('/tables/current', async (req, res) => {
     const currentSeason = '2023-2024';
     
     const tables = await prisma.tournamentTable.findMany({
-      include: {
+      where: {
         tournament: {
-          where: {
-            season: currentSeason
-          }
-        },
+          season: currentSeason
+        }
+      },
+      include: {
+        tournament: true,
         ageGroup: true,
         standings: {
           orderBy: {
@@ -152,6 +153,70 @@ router.get('/', async (req, res) => {
     res.json(tournaments);
   } catch (error) {
     res.status(500).json({ error: 'Помилка при отриманні турнірів' });
+  }
+});
+
+// Створити турнір
+router.post('/', async (req, res) => {
+  try {
+    const { name, season, startDate, endDate, description, ageGroupId } = req.body;
+    
+      const tournament = await prisma.tournament.create({
+      data: {
+        name,
+        season,
+        startDate: new Date(startDate),
+        endDate: endDate ? new Date(endDate) : null,
+        description: description || null,
+                ...(ageGroupId && { ageGroupId })
+      }
+    });
+      
+    res.status(201).json(tournament);
+  } catch (error) {
+    console.error('Помилка створення турніру:', error);
+    res.status(500).json({ error: 'Помилка при створенні турніру' });
+  }
+});
+
+// Оновити турнір
+router.put('/:id', async (req, res) => {
+  try {
+    const { name, season, startDate, endDate, description, ageGroupId } = req.body;
+    
+    const tournament = await prisma.tournament.update({
+      where: { id: req.params.id },
+      data: {
+        name,
+        season,
+        startDate: new Date(startDate),
+        endDate: endDate ? new Date(endDate) : null,
+        description: description || null,
+        ageGroupId
+      },
+      include: {
+        ageGroup: true
+      }
+    });
+    
+    res.json(tournament);
+  } catch (error) {
+    console.error('Помилка оновлення турніру:', error);
+    res.status(500).json({ error: 'Помилка при оновленні турніру' });
+  }
+});
+
+// Видалити турнір
+router.delete('/:id', async (req, res) => {
+  try {
+    await prisma.tournament.delete({
+      where: { id: req.params.id }
+    });
+    
+    res.json({ message: 'Турнір видалено' });
+  } catch (error) {
+    console.error('Помилка видалення турніру:', error);
+    res.status(500).json({ error: 'Помилка при видаленні турніру' });
   }
 });
 

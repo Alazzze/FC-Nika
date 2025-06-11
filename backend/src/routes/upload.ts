@@ -106,8 +106,6 @@ router.delete('/:filename', (req, res) => {
   }
 });
 
-
-
 // Endpoint для завантаження фото з адмін панелі
 router.post('/photos', upload.single('files'), async (req, res) => {
   try {
@@ -141,6 +139,45 @@ router.post('/photos', upload.single('files'), async (req, res) => {
   } catch (error) {
     console.error('Помилка завантаження фото:', error);
     res.status(500).json({ error: 'Помилка завантаження фото' });
+  }
+});
+
+// Endpoint для завантаження відео з адмін панелі
+router.post('/videos', upload.single('files'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Файл не надіслано' });
+    }
+
+    // Перевірка типу файлу
+    if (!req.file.mimetype.startsWith('video/')) {
+      return res.status(400).json({ error: 'Потрібен відео файл' });
+    }
+
+    const { title, description, category, teamId, published } = req.body;
+    const filePath = `http://localhost:3001/uploads/${req.file.filename}`;
+    
+    // Створюємо запис в базі даних
+    const { prisma } = require('../index');
+    const video = await prisma.video.create({
+      data: {
+        title: title || req.file.originalname,
+        description: description || '',
+        url: filePath,
+        type: 'UPLOAD',
+        category: category || 'general',
+        teamId: teamId || null,
+        published: published === 'true' || published === true || true
+      }
+    });
+
+    res.json({ 
+      message: 'Відео завантажено успішно',
+      video: video
+    });
+  } catch (error) {
+    console.error('Помилка завантаження відео:', error);
+    res.status(500).json({ error: 'Помилка завантаження відео' });
   }
 });
 

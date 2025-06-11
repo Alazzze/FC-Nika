@@ -117,14 +117,14 @@ model Tournament {
   id          String   @id @default(cuid())
   name        String
   season      String // 2023-2024
-  ageGroupId  String
+  ageGroupId  String?
   startDate   DateTime
   endDate     DateTime?
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  ageGroup         AgeGroup           @relation(fields: [ageGroupId], references: [id])
+  ageGroup         AgeGroup?           @relation(fields: [ageGroupId], references: [id])
   tournamentTeams  TournamentTeam[]
   tournamentTable  TournamentTable?
 
