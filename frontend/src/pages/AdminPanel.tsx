@@ -1813,6 +1813,48 @@ const TrainingForm: React.FC<{
             required
           />
           
+          <textarea
+            placeholder="Опис тренування"
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            className="border rounded-lg px-3 py-2 w-full"
+            rows={2}
+          />
+          
+          <div>
+            <label className="block text-sm font-medium mb-2">Дата тренування *</label>
+            <input
+              type="date"
+              value={formData.date}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              className="border rounded-lg px-3 py-2 w-full"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Час початку *</label>
+              <input
+                type="time"
+                value={formData.startTime}
+                onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                className="border rounded-lg px-3 py-2 w-full"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Час кінця *</label>
+              <input
+                type="time"
+                value={formData.endTime}
+                onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                className="border rounded-lg px-3 py-2 w-full"
+                required
+              />
+            </div>
+          </div>
+          
           <input
             type="text"
             placeholder="Місце проведення"
