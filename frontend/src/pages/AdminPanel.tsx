@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { useDropzone } from 'react-dropzone'
 import toast from 'react-hot-toast'
-import { Camera, Upload, X, Edit3, Trash2, Users, FileText, Video } from 'lucide-react'
+import { Camera, Upload, X, Edit3, Trash2, Users, FileText, Video, UserCheck, Trophy, Calendar } from 'lucide-react'
 
 interface Photo {
   id: number
@@ -34,8 +34,6 @@ interface Video {
   }
 }
 
-
-
 interface NewsItem {
   id: number
   title: string
@@ -54,6 +52,55 @@ interface Team {
   }
 }
 
+interface Coach {
+  id: string
+  firstName: string
+  lastName: string
+  position: string
+  experience?: number
+  photo?: string
+  biography?: string
+  phone?: string
+  email?: string
+  achievements?: string
+  teamId?: string
+  createdAt: string
+  team?: {
+    id: string
+    name: string
+    ageGroup: {
+      name: string
+    }
+  }
+}
+
+interface Tournament {
+  id: string
+  name: string
+  season: string
+  startDate: string
+  endDate?: string
+  description?: string
+  createdAt: string
+  ageGroup?: {
+    id: string
+    name: string
+  } | null
+}
+
+interface Training {
+  id: string
+  title: string
+  description?: string
+  date: string
+  startTime: string
+  endTime: string
+  location: string
+  teamId?: string
+  ageGroupId?: string
+  createdAt: string
+}
+
 const AdminPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState('news')
   const [loading, setLoading] = useState(true)
@@ -61,6 +108,9 @@ const AdminPanel: React.FC = () => {
   const tabs = [
     { id: 'news', name: 'Новини', icon: FileText },
     { id: 'teams', name: 'Команди', icon: Users },
+    { id: 'coaches', name: 'Тренери', icon: UserCheck },
+    { id: 'tournaments', name: 'Турніри', icon: Trophy },
+    { id: 'schedule', name: 'Розклад', icon: Calendar },
     { id: 'photos', name: 'Фото', icon: Camera },
     { id: 'videos', name: 'Відео', icon: Video },
   ]
@@ -109,6 +159,9 @@ const AdminPanel: React.FC = () => {
         <div>
           {activeTab === 'news' && <NewsTab />}
           {activeTab === 'teams' && <TeamsTab />}
+          {activeTab === 'coaches' && <CoachesTab />}
+          {activeTab === 'tournaments' && <TournamentsTab />}
+          {activeTab === 'schedule' && <ScheduleTab />}
           {activeTab === 'photos' && <PhotosTab />}
           {activeTab === 'videos' && <VideosTab />}
         </div>
@@ -226,15 +279,54 @@ const NewsTab: React.FC = () => {
 
 // Teams Tab Component
 const TeamsTab: React.FC = () => {
+  const [teams, setTeams] = useState<Team[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const loadTeams = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/teams')
+      if (response.ok) {
+        const data = await response.json()
+        setTeams(data)
+      }
+    } catch (error) {
+      toast.error('Помилка завантаження команд')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadTeams()
+  }, [])
+
+  if (loading) {
+    return <div className="text-center py-8">Завантаження...</div>
+  }
+
   return (
-    <div className="text-center py-12">
-      <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-      <h3 className="text-lg font-medium text-gray-900 mb-2">Управління командами</h3>
-      <p className="text-gray-500">В стадії розробки</p>
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold">Управління командами</h2>
+      </div>
+
+      <div className="grid gap-4">
+        {teams.map((team) => (
+          <div key={team.id} className="bg-white p-6 rounded-lg border border-gray-200">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="font-semibold text-lg mb-2">{team.name}</h3>
+                <p className="text-blue-600 text-sm">
+                  Вікова група: {team.ageGroup.name}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
-
 
 // Photos Tab Component
 const PhotosTab: React.FC = () => {
@@ -455,8 +547,6 @@ const NewsForm: React.FC<{
     </div>
   )
 }
-
-
 
 // Photo Form Component  
 const PhotoForm: React.FC<{
@@ -1095,6 +1185,659 @@ const VideoForm: React.FC<{
             </div>
           </form>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// Coaches Tab Component
+const CoachesTab: React.FC = () => {
+  const [coaches, setCoaches] = useState<Coach[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [editingItem, setEditingItem] = useState<Coach | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  const loadCoaches = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/coaches')
+      if (response.ok) {
+        const data = await response.json()
+        setCoaches(data)
+      }
+    } catch (error) {
+      toast.error('Помилка завантаження тренерів')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadCoaches()
+  }, [])
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Ви впевнені що хочете видалити цього тренера?')) return
+    
+    try {
+      const response = await fetch(`http://localhost:3001/api/coaches/${id}`, {
+        method: 'DELETE'
+      })
+      if (response.ok) {
+        toast.success('Тренера видалено!')
+        loadCoaches()
+      }
+    } catch (error) {
+      toast.error('Помилка видалення')
+    }
+  }
+
+  if (loading) {
+    return <div className="text-center py-8">Завантаження...</div>
+  }
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold">Управління тренерами</h2>
+        <button
+          onClick={() => setShowForm(true)}
+          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center space-x-2"
+        >
+          <UserCheck className="w-4 h-4" />
+          <span>Додати тренера</span>
+        </button>
+      </div>
+
+      <div className="grid gap-4">
+        {coaches.map((coach) => (
+          <div key={coach.id} className="bg-white p-6 rounded-lg border border-gray-200">
+            <div className="flex items-start space-x-4">
+              {coach.photo && (
+                <img
+                  src={coach.photo}
+                  alt={`${coach.firstName} ${coach.lastName}`}
+                  className="w-16 h-16 object-cover rounded-full flex-shrink-0"
+                />
+              )}
+              <div className="flex-1">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">
+                      {coach.firstName} {coach.lastName}
+                    </h3>
+                    <p className="text-blue-600 text-sm mb-2">{coach.position}</p>
+                    {coach.experience && (
+                      <p className="text-gray-600 text-sm mb-2">
+                        Досвід: {coach.experience} років
+                      </p>
+                    )}
+                    {coach.team && (
+                      <p className="text-green-600 text-sm">
+                        Команда: {coach.team.name} ({coach.team.ageGroup.name})
+                      </p>
+                    )}
+                    {coach.phone && (
+                      <p className="text-gray-600 text-sm mt-1">
+                        Телефон: {coach.phone}
+                      </p>
+                    )}
+                    {coach.email && (
+                      <p className="text-gray-600 text-sm">
+                        Email: {coach.email}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => setEditingItem(coach)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(coach.id)}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {(showForm || editingItem) && (
+        <CoachForm
+          item={editingItem}
+          onClose={() => {
+            setShowForm(false)
+            setEditingItem(null)
+          }}
+          onSave={loadCoaches}
+        />
+      )}
+    </div>
+  )
+}
+
+// Coach Form Component
+const CoachForm: React.FC<{
+  item: Coach | null
+  onClose: () => void
+  onSave: () => void
+}> = ({ item, onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+    firstName: item?.firstName || '',
+    lastName: item?.lastName || '',
+    position: item?.position || '',
+    experience: item?.experience || 0,
+    photo: item?.photo || '',
+    biography: item?.biography || '',
+    phone: item?.phone || '',
+    email: item?.email || '',
+    achievements: item?.achievements || '',
+    teamId: item?.teamId || ''
+  })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    try {
+      const url = item
+        ? `http://localhost:3001/api/coaches/${item.id}`
+        : 'http://localhost:3001/api/coaches'
+      
+      const response = await fetch(url, {
+        method: item ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+
+      if (response.ok) {
+        toast.success(item ? 'Тренера оновлено!' : 'Тренера додано!')
+        onSave()
+        onClose()
+      }
+    } catch (error) {
+      toast.error('Помилка збереження')
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-8 rounded-lg max-w-2xl w-full mx-4 max-h-screen overflow-y-auto">
+        <h3 className="text-xl font-semibold mb-6">
+          {item ? 'Редагувати тренера' : 'Додати тренера'}
+        </h3>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <input
+              type="text"
+              placeholder="Ім'я"
+              value={formData.firstName}
+              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+              className="border rounded-lg px-3 py-2"
+              required
+            />
+            <input
+              type="text"
+              placeholder="Прізвище"
+              value={formData.lastName}
+              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+              className="border rounded-lg px-3 py-2"
+              required
+            />
+          </div>
+          
+          <input
+            type="text"
+            placeholder="Посада"
+            value={formData.position}
+            onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+            className="border rounded-lg px-3 py-2 w-full"
+            required
+          />
+          
+          <div className="flex space-x-4">
+            <button
+              type="submit"
+              className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600"
+            >
+              {item ? 'Оновити' : 'Додати'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400"
+            >
+              Скасувати
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// Tournaments Tab Component
+const TournamentsTab: React.FC = () => {
+  const [tournaments, setTournaments] = useState<Tournament[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [editingItem, setEditingItem] = useState<Tournament | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  const loadTournaments = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/tournaments')
+      if (response.ok) {
+        const data = await response.json()
+        setTournaments(data)
+      }
+    } catch (error) {
+      toast.error('Помилка завантаження турнірів')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadTournaments()
+  }, [])
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Ви впевнені що хочете видалити цей турнір?')) return
+    
+    try {
+      const response = await fetch(`http://localhost:3001/api/tournaments/${id}`, {
+        method: 'DELETE'
+      })
+      if (response.ok) {
+        toast.success('Турнір видалено!')
+        loadTournaments()
+      }
+    } catch (error) {
+      toast.error('Помилка видалення')
+    }
+  }
+
+  if (loading) {
+    return <div className="text-center py-8">Завантаження...</div>
+  }
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold">Управління турнірами</h2>
+        <button
+          onClick={() => setShowForm(true)}
+          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center space-x-2"
+        >
+          <Trophy className="w-4 h-4" />
+          <span>Додати турнір</span>
+        </button>
+      </div>
+
+      <div className="grid gap-4">
+        {tournaments.map((tournament) => (
+          <div key={tournament.id} className="bg-white p-6 rounded-lg border border-gray-200">
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg mb-2">{tournament.name}</h3>
+                <p className="text-blue-600 text-sm mb-2">Сезон: {tournament.season}</p>
+                <p className="text-gray-600 text-sm mb-2">
+                  Вікова група: {tournament.ageGroup?.name || 'Не вказано'}
+                </p>
+                <div className="flex items-center space-x-4 text-sm text-gray-500">
+                  <span>Початок: {new Date(tournament.startDate).toLocaleDateString('uk-UA')}</span>
+                  {tournament.endDate && (
+                    <span>Кінець: {new Date(tournament.endDate).toLocaleDateString('uk-UA')}</span>
+                  )}
+                </div>
+                {tournament.description && (
+                  <p className="text-gray-600 text-sm mt-2">{tournament.description}</p>
+                )}
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setEditingItem(tournament)}
+                  className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                >
+                  <Edit3 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleDelete(tournament.id)}
+                  className="p-2 text-red-600 hover:bg-red-50 rounded"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {(showForm || editingItem) && (
+        <TournamentForm
+          item={editingItem}
+          onClose={() => {
+            setShowForm(false)
+            setEditingItem(null)
+          }}
+          onSave={loadTournaments}
+        />
+      )}
+    </div>
+  )
+}
+
+// Tournament Form Component
+const TournamentForm: React.FC<{
+  item: Tournament | null
+  onClose: () => void
+  onSave: () => void
+}> = ({ item, onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+    name: item?.name || '',
+    season: item?.season || '',
+    startDate: item?.startDate || '',
+    endDate: item?.endDate || '',
+    description: item?.description || '',
+    ageGroupId: item?.ageGroup?.id || ''
+  })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    try {
+      const url = item
+        ? `http://localhost:3001/api/tournaments/${item.id}`
+        : 'http://localhost:3001/api/tournaments'
+      
+      const response = await fetch(url, {
+        method: item ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+
+      if (response.ok) {
+        toast.success(item ? 'Турнір оновлено!' : 'Турнір додано!')
+        onSave()
+        onClose()
+      }
+    } catch (error) {
+      toast.error('Помилка збереження')
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-8 rounded-lg max-w-2xl w-full mx-4 max-h-screen overflow-y-auto">
+        <h3 className="text-xl font-semibold mb-6">
+          {item ? 'Редагувати турнір' : 'Додати турнір'}
+        </h3>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="text"
+            placeholder="Назва турніру"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            className="border rounded-lg px-3 py-2 w-full"
+            required
+          />
+          
+          <input
+            type="text"
+            placeholder="Сезон"
+            value={formData.season}
+            onChange={(e) => setFormData({ ...formData, season: e.target.value })}
+            className="border rounded-lg px-3 py-2 w-full"
+            required
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Дата початку *</label>
+              <input
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                className="border rounded-lg px-3 py-2 w-full"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Дата кінця</label>
+              <input
+                type="date"
+                value={formData.endDate}
+                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                className="border rounded-lg px-3 py-2 w-full"
+              />
+            </div>
+          </div>
+
+          <textarea
+            placeholder="Опис турніру"
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            className="border rounded-lg px-3 py-2 w-full"
+            rows={3}
+          />
+          
+          <div className="flex space-x-4">
+            <button
+              type="submit"
+              className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600"
+            >
+              {item ? 'Оновити' : 'Додати'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400"
+            >
+              Скасувати
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// Schedule Tab Component
+const ScheduleTab: React.FC = () => {
+  const [trainings, setTrainings] = useState<Training[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [editingItem, setEditingItem] = useState<Training | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  const loadTrainings = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/trainings')
+      if (response.ok) {
+        const data = await response.json()
+        setTrainings(data)
+      }
+    } catch (error) {
+      toast.error('Помилка завантаження розкладу')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadTrainings()
+  }, [])
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Ви впевнені що хочете видалити це тренування?')) return
+    
+    try {
+      const response = await fetch(`http://localhost:3001/api/trainings/${id}`, {
+        method: 'DELETE'
+      })
+      if (response.ok) {
+        toast.success('Тренування видалено!')
+        loadTrainings()
+      }
+    } catch (error) {
+      toast.error('Помилка видалення')
+    }
+  }
+
+  if (loading) {
+    return <div className="text-center py-8">Завантаження...</div>
+  }
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold">Управління розкладом</h2>
+        <button
+          onClick={() => setShowForm(true)}
+          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center space-x-2"
+        >
+          <Calendar className="w-4 h-4" />
+          <span>Додати тренування</span>
+        </button>
+      </div>
+
+      <div className="grid gap-4">
+        {trainings.map((training) => (
+          <div key={training.id} className="bg-white p-6 rounded-lg border border-gray-200">
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg mb-2">{training.title}</h3>
+                <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
+                  <span>📅 {new Date(training.date).toLocaleDateString('uk-UA')}</span>
+                  <span>⏰ {training.startTime} - {training.endTime}</span>
+                  <span>📍 {training.location}</span>
+                </div>
+                {training.description && (
+                  <p className="text-gray-600 text-sm mb-2">{training.description}</p>
+                )}
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setEditingItem(training)}
+                  className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                >
+                  <Edit3 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleDelete(training.id)}
+                  className="p-2 text-red-600 hover:bg-red-50 rounded"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {(showForm || editingItem) && (
+        <TrainingForm
+          item={editingItem}
+          onClose={() => {
+            setShowForm(false)
+            setEditingItem(null)
+          }}
+          onSave={loadTrainings}
+        />
+      )}
+    </div>
+  )
+}
+
+// Training Form Component
+const TrainingForm: React.FC<{
+  item: Training | null
+  onClose: () => void
+  onSave: () => void
+}> = ({ item, onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+    title: item?.title || '',
+    description: item?.description || '',
+    date: item?.date?.split('T')[0] || '',
+    startTime: item?.startTime || '',
+    endTime: item?.endTime || '',
+    location: item?.location || '',
+    teamId: item?.teamId || '',
+    ageGroupId: item?.ageGroupId || ''
+  })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    try {
+      const url = item
+        ? `http://localhost:3001/api/trainings/${item.id}`
+        : 'http://localhost:3001/api/trainings'
+      
+      const response = await fetch(url, {
+        method: item ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+
+      if (response.ok) {
+        toast.success(item ? 'Тренування оновлено!' : 'Тренування додано!')
+        onSave()
+        onClose()
+      }
+    } catch (error) {
+      toast.error('Помилка збереження')
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-8 rounded-lg max-w-2xl w-full mx-4 max-h-screen overflow-y-auto">
+        <h3 className="text-xl font-semibold mb-6">
+          {item ? 'Редагувати тренування' : 'Додати тренування'}
+        </h3>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="text"
+            placeholder="Назва тренування"
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            className="border rounded-lg px-3 py-2 w-full"
+            required
+          />
+          
+          <input
+            type="text"
+            placeholder="Місце проведення"
+            value={formData.location}
+            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+            className="border rounded-lg px-3 py-2 w-full"
+            required
+          />
+          
+          <div className="flex space-x-4">
+            <button
+              type="submit"
+              className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600"
+            >
+              {item ? 'Оновити' : 'Додати'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400"
+            >
+              Скасувати
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )

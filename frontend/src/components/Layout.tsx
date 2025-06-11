@@ -33,7 +33,18 @@ export default function Layout({ children }: LayoutProps) {
             {/* Logo */}
             <Link to="/" className="flex items-center justify-center space-x-6 mx-auto md:mx-0">
               <div className="w-24 h-30 lg:w-32 lg:h-40">
-                <div className="w-full h-full bg-nika-blue rounded-full flex items-center justify-center text-white font-bold text-xl">
+                <img 
+                  src={`http://localhost:3001/uploads/nika-logo.jpg?v=${Date.now()}`} 
+                  alt="ФК Ніка логотип"
+                  className="w-full h-full object-contain rounded-full shadow-lg"
+                  onError={(e) => {
+                    // Fallback якщо логотип не завантажиться
+                    e.currentTarget.style.display = 'none';
+                    const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                    if (fallback) fallback.style.display = 'flex';
+                  }}
+                />
+                <div className="w-full h-full bg-nika-blue rounded-full flex items-center justify-center text-white font-bold text-xl" style={{display: 'none'}}>
                   ⚽
                 </div>
               </div>

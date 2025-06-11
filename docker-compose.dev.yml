@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  database:
+    image: postgres:15
+    container_name: nika-db-dev
+    environment:
+      POSTGRES_DB: nika_football_club
+      POSTGRES_USER: nika
+      POSTGRES_PASSWORD: nika123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    networks:
+      - nika-network-dev
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nika-backend-dev
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://nika:nika123@database:5432/nika_football_club
+      NODE_ENV: development
+    depends_on:
+      - database
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/src:/app/src:ro
+      - ./backend/prisma:/app/prisma:ro
+      - ./backend/package.json:/app/package.json:ro
+      - ./backend/package-lock.json:/app/package-lock.json:ro
+    networks:
+      - nika-network-dev
+    command: npm run dev
+    restart: unless-stopped
+
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nika-frontend-dev
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend/src:/app/src:ro
+      - ./frontend/public:/app/public:ro
+      - ./frontend/package.json:/app/package.json:ro
+      - ./frontend/package-lock.json:/app/package-lock.json:ro
+      - ./frontend/vite.config.ts:/app/vite.config.ts:ro
+      - ./frontend/tsconfig.json:/app/tsconfig.json:ro
+      - ./frontend/index.html:/app/index.html:ro
+    networks:
+      - nika-network-dev
+    environment:
+      - VITE_API_URL=http://localhost:3001
+    restart: unless-stopped
+
+volumes:
+  postgres_data_dev:
+
+networks:
+  nika-network-dev:
+    driver: bridge 

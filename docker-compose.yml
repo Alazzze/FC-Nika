@@ -25,6 +25,8 @@ services:
       - database
     volumes:
       - ./backend/uploads:/app/uploads
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
     networks:
       - nika-network
 
@@ -35,6 +37,9 @@ services:
       - "3000:3000"
     depends_on:
       - backend
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
     networks:
       - nika-network
 
