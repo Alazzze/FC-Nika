@@ -1,0 +1,46 @@
+services:
+  database:
+    image: postgres:15
+    container_name: nika-db
+    environment:
+      POSTGRES_DB: nika_football_club
+      POSTGRES_USER: nika
+      POSTGRES_PASSWORD: nika123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - nika-network
+
+  backend:
+    build: ./backend
+    container_name: nika-backend
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://nika:nika123@database:5432/nika_football_club
+      NODE_ENV: development
+    depends_on:
+      - database
+    volumes:
+      - ./backend/uploads:/app/uploads
+    networks:
+      - nika-network
+
+  frontend:
+    build: ./frontend
+    container_name: nika-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - nika-network
+
+volumes:
+  postgres_data:
+
+networks:
+  nika-network:
+    driver: bridge 
